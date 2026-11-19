@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "body": { "command": "uv", "args": ["run", "server.py"] }
+  }
+}
