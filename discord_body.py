@@ -3,9 +3,13 @@
 DISCORD_BOT_TOKEN と DISCORD_CHANNEL_ID があるときだけ動く。
 ボットは Mac の側から Discord につなぎに行く（Gateway）ので、公開 URL もポート開放も要らない。
 """
-import asyncio, threading
+import asyncio
+import logging
+import threading
 
 import discord
+
+logger = logging.getLogger(__name__)
 
 
 class AnswerModal(discord.ui.Modal):
@@ -66,10 +70,19 @@ class DiscordBody:
 
     async def _send(self, jid, kind, text, reason):
         await self.client.wait_until_ready()
-        ch = self.client.get_channel(self.channel_id) or await self.client.fetch_channel(self.channel_id)
         mention = f"<@{self.user_id}> " if self.user_id else ""
         body = f"**{kind}**: {text}" + (f"\n理由: {reason}" if reason else "")
-        self.msgs[jid] = (await ch.send(mention + body, view=AnswerView(self, jid)), body)
+        try:
+            channel = self.client.get_channel(self.channel_id) or await self.client.fetch_channel(self.channel_id)
+            message = await channel.send(mention + body, view=AnswerView(self, jid))
+        except discord.HTTPException as error:
+            logger.error(
+                "Discordへの依頼送信に失敗しました (HTTP %s, Discord code %s)。"
+                "チャンネルIDとボットの閲覧・送信権限を確認してください。",
+                error.status, error.code,
+            )
+            return
+        self.msgs[jid] = (message, body)
 
     async def _close(self, jid, ok, note):
         sent = self.msgs.pop(jid, None)

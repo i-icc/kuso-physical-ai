@@ -36,6 +36,20 @@ uv sync
 
 ## AI からつなぐ
 
+### Codex（日常メモなど別のフォルダで使う）
+
+サーバーの準備は `uv --directory /path/to/kuso-physical-ai sync`。Codex を使う作業フォルダの `.codex/config.toml` に追加します。
+
+```toml
+[mcp_servers.body]
+command = "uv"
+args = ["--directory", "/path/to/kuso-physical-ai", "run", "server.py"]
+tool_timeout_sec = 86400
+```
+
+作業フォルダを信頼済みにして、そこで `codex` を起動します。`/mcp` で `body` と道具を確認してください。`.env` はサーバー側のフォルダから読み込まれます。待ち時間は秒単位です。
+
+
 ### Claude Code（このフォルダで使う）
 
 フォルダに `.mcp.json` があるので、ここで起動するだけでつながる。
@@ -48,6 +62,29 @@ MCP_TOOL_TIMEOUT=86400000 claude
 - `MCP_TOOL_TIMEOUT` は、道具の返事を待つ時間（ミリ秒）。体は遅いので長くする（例は 1 日）。
   短いと、体が動いている途中で AI 側があきらめる。
 - つながったかは、Claude Code の中で `/mcp` を開いて `body` が connected になっているかで見る。
+
+### Claude Code（別の作業フォルダで、この起動だけ使う）
+
+サーバーはこのリポジトリに置き、日常メモなどの別フォルダを作業場所にできます。
+`body.mcp.json` などの設定ファイルに次を保存します。
+
+```json
+{
+  "mcpServers": {
+    "body": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/kuso-physical-ai", "run", "server.py"]
+    }
+  }
+}
+```
+
+```sh
+cd /path/to/daily-notes
+MCP_TOOL_TIMEOUT=86400000 claude --mcp-config /path/to/body.mcp.json
+```
+
+パスは実際の絶対パスに置き換えてください。`.env` は引き続き `server.py` と同じ場所から読み込みます。元のリポジトリの `.mcp.json` は相対パスなので、別フォルダからそのまま読み込む用途には使いません。
 
 ### Claude Code（どのフォルダからでも使う）
 
